@@ -154,11 +154,21 @@ module RMail
           # of this chunk, refrain from returning it.
           unless found_last_delimiter or input_gave_nil
             start = chunk.rindex(/\n/) || 0
-            if chunk.index(@might_be_delimiter_re, start)
-              @caryover = chunk[start..-1]
-              chunk[start..-1] = ''
-              chunk = nil if chunk.length == 0
-            end
+
+	    # chunk might be frozen - prevent errors by being cautios
+	    begin
+	      if chunk.index(@might_be_delimiter_re, start)
+		@caryover = chunk[start..-1]
+		chunk[start..-1] = ''
+		chunk = nil if chunk.length == 0
+	      end
+	    rescue => e
+	      # we ony rescue frozen errors. The rest gets re-raised
+	      unless e.message =~ /modify frozen string/i
+		raise e
+	      end
+	    end
+
           end
 
           unless chunk.nil?
